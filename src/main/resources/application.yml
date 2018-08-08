@@ -1,0 +1,25 @@
+server:
+  port: 8085
+spring:
+  cache:
+    ehcache:
+      config: classpath:cache/ehcache.xml
+    type: ehcache
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    # password:
+    jedis:
+      max-active: 8
+      max-wait: -1
+      max-idle: 8
+      min-idle: 0
+      timeout: 0
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  datasource:
+    url: jdbc:mysql://192.168.1.15:3306/xymsh?characterEncoding=utf-8&&useSSL=false
+    username: odev
+    password: ws2812bc
+    driverClassName: com.mysql.jdbc.Driver
