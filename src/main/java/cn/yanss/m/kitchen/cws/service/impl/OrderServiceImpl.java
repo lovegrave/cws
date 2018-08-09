@@ -25,20 +25,18 @@ import java.util.UUID;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderClient orderClient;
+    private final RedisService redisService;
+    private final EhCacheServiceImpl ehCacheService;
+    private final NotifyServiceImpl notifyService;
 
     @Autowired
-    private RedisService redisService;
-
-    @Autowired
-    private EhCacheServiceImpl ehCacheService;
-    @Autowired
-    private NotifyServiceImpl notifyService;
-
-
-    @Autowired
-    public OrderServiceImpl(OrderClient orderClient) {
+    public OrderServiceImpl(OrderClient orderClient, RedisService redisService, EhCacheServiceImpl ehCacheService, NotifyServiceImpl notifyService) {
         this.orderClient = orderClient;
+        this.redisService = redisService;
+        this.ehCacheService = ehCacheService;
+        this.notifyService = notifyService;
     }
+
     /**
      * 补单接口
      *
@@ -88,6 +86,7 @@ public class OrderServiceImpl implements OrderService {
                         String orderNo = orderResponse.getOrderNo();
                         if(StringUtils.isEmpty(orderNo)){
                             orderNo = String.valueOf(1000+redisService.incr(DateUtil.getStartTime()+orderResponse.getStoreId(),90000));
+                            orderResponse.setOrderNo(orderNo);
                         }
                         orderResponse.setOrderPick(orderNo);
                         /**

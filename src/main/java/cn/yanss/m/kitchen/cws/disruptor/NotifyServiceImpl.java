@@ -12,6 +12,7 @@ import cn.yanss.m.kitchen.cws.websocket.message.PushMessage;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.EventHandlerGroup;
 import com.lmax.disruptor.dsl.ProducerType;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -40,7 +41,8 @@ public class NotifyServiceImpl implements DisposableBean,InitializingBean {
     public void afterPropertiesSet() throws Exception {
         disruptor = new Disruptor<>(new NotifyEventFactory(),RING_BUFFER_SIZE, Executors.defaultThreadFactory(), ProducerType.SINGLE,new BlockingWaitStrategy());
         disruptor.setDefaultExceptionHandler(new NotifyEventHandlerException());
-        disruptor.handleEventsWith(new NotifyKitchenEventHandler(pushMessage,redisService), new NotifyCacheEventHandler(ehCacheService,redisService));
+        EventHandlerGroup<NotifyMessage> handlerGroup = disruptor.handleEventsWith(new NotifyCacheEventHandler(ehCacheService,redisService));
+        handlerGroup.then(new NotifyKitchenEventHandler(pushMessage,redisService));
         disruptor.start();
     }
 

@@ -73,4 +73,6 @@ public class OrderStatus {
      * 订单申请退款,订单取消存储键头
      */
     public static final String REFUND = "refund";
+
+    public static final String THREAD_ERREO = "线程池中发现异常，被中断";
 }

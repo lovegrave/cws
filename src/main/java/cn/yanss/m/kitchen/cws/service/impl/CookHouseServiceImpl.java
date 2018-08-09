@@ -1,6 +1,5 @@
 package cn.yanss.m.kitchen.cws.service.impl;
 
-import cn.yanss.m.kitchen.cws.anntate.ServiceLimit;
 import cn.yanss.m.kitchen.cws.api.OrderClient;
 import cn.yanss.m.kitchen.cws.cache.EhCacheServiceImpl;
 import cn.yanss.m.kitchen.cws.cache.RedisService;
@@ -16,6 +15,7 @@ import cn.yanss.m.kitchen.cws.service.impl.thread.pool.ThreadPool;
 import cn.yanss.m.kitchen.cws.utils.MapperUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import common.returnModel.ReturnModel;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -29,19 +29,23 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @Service
+@Log4j2
 public class CookHouseServiceImpl implements CookHouseService {
 
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private EhCacheServiceImpl ehCacheService;
-    @Autowired
-    private OrderClient orderClient;
-    @Autowired
-    private NotifyServiceImpl notifyService;
-    @Autowired
-    private DispatcherService dispatcherService;
+    private final RedisService redisService;
+    private final EhCacheServiceImpl ehCacheService;
+    private final OrderClient orderClient;
+    private final NotifyServiceImpl notifyService;
+    private final DispatcherService dispatcherService;
 
+    @Autowired
+    public CookHouseServiceImpl(RedisService redisService, EhCacheServiceImpl ehCacheService, OrderClient orderClient, NotifyServiceImpl notifyService, DispatcherService dispatcherService) {
+        this.redisService = redisService;
+        this.ehCacheService = ehCacheService;
+        this.orderClient = orderClient;
+        this.notifyService = notifyService;
+        this.dispatcherService = dispatcherService;
+    }
 
     /**
      * 手动查询该店铺下特定状态的订单集合
@@ -49,7 +53,6 @@ public class CookHouseServiceImpl implements CookHouseService {
      * @return
      */
     @Override
-    @ServiceLimit
     public ReturnModel findOrderList(OrderRequest orderRequest) {
         Integer status = orderRequest.getStatus();
         /**
@@ -64,6 +67,9 @@ public class CookHouseServiceImpl implements CookHouseService {
         if(status == OrderStatus.DIS_COMPLETE){
             return new ReturnModel(redisService.lpList(OrderStatus.COMPLETE+orderRequest.getStoreId()));
         }
+        /**
+         * 其它进行时配送状态订单
+         */
         String key = orderRequest.getStoreId()+""+orderRequest.getStatus();
         Set<String> keys = redisService.zrange(key,0,-1);
         List<String> orderIds = keys.stream().collect(Collectors.toList());
@@ -82,8 +88,10 @@ public class CookHouseServiceImpl implements CookHouseService {
         if(StringUtils.isEmpty(orderId)){
             return new ReturnModel();
         }
-
-        if(!orderId.startsWith("PT")){
+        /**
+         * 判断orderId是订单号还是取货号
+         */
+        if('P' == orderId.charAt(0)){
             orderId = redisService.getMapString(OrderStatus.ORDER_PICK+storeId,orderId);
         }
         if(StringUtils.isEmpty(orderId)){
@@ -105,7 +113,7 @@ public class CookHouseServiceImpl implements CookHouseService {
      */
     @Override
     public ReturnModel opt(String orderId) {
-        OrderResponse orderResponse = ehCacheService.getValue(orderId,OrderResponse.class);
+        OrderResponse orderResponse = (OrderResponse) ehCacheService.getObj(orderId);
         if(null == orderResponse){
             ReturnModel returnModel = orderClient.detail(orderId);
             orderResponse = null != returnModel.getData()? MapperUtils.obj2pojo(returnModel.getData(),OrderResponse.class):null;
@@ -116,15 +124,26 @@ public class CookHouseServiceImpl implements CookHouseService {
             orderResponse.setOrderPick(orderResponse.getOrderNo());
         }
         Integer status = orderResponse.getTotalStatus();
+        /**
+         * 正常接单接口
+         */
         if(status == 1){
             ModifyOrderRequest modifyOrderRequest = new ModifyOrderRequest();
             modifyOrderRequest.setOrderId(orderId);
             modifyOrderRequest.setOrderStatus(2);
             modifyOrderRequest.setSendStatus(2);
-            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            try {
+                future.get();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
             orderResponse.setTotalStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setOrderStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setSendStatus(OrderStatus.INDEVELOPMENT);
+        /**
+         * 异常订单接单接口,并不建议在异常状态为5的时候使用
+         */
         }else if(status == 5 || status == 6){
             orderResponse.setSendStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setTotalStatus(OrderStatus.INDEVELOPMENT);
@@ -144,37 +163,69 @@ public class CookHouseServiceImpl implements CookHouseService {
      */
     @Override
     public ReturnModel orderException(String orderId) throws Exception {
-        OrderResponse orderResponse = ehCacheService.getValue(orderId,OrderResponse.class);
+        /**
+         * 能强转是由于存入数据时采用订单对象
+         */
+        OrderResponse orderResponse = (OrderResponse) ehCacheService.getObj(orderId);
         if(null == orderResponse){
             return new ReturnModel(500,"该订单不存在或已过期");
         }
         Integer totalStatus = orderResponse.getTotalStatus();
+        /**
+         * 在订单已完成的情况下不能手动报异常
+         */
         if(totalStatus == OrderStatus.DIS_COMPLETE){
             return new ReturnModel(500,"订单已完成,不允许取消,特殊情况请联系后台");
         }
+        /**
+         * 当订单状态为1时,直接转为异常状态
+         */
         if(totalStatus == 1){
             orderResponse.setCancelCode(3);
             orderResponse.setTotalStatus(6);
             notifyService.sendNotify(orderResponse);
             return new ReturnModel();
         }
-        ReturnModel cancelModel = dispatcherService.cancelOrder(orderId, 3);
+        /**
+         * 当订单状态不为1时，尝试取消第三方订单
+         */
+        ReturnModel cancelModel = dispatcherService.cancelOrder(orderResponse);
         if (cancelModel.getCode() == 200) {
             ModifyOrderRequest modifyOrderRequest = new ModifyOrderRequest();
             modifyOrderRequest.setOrderId(orderId);
             modifyOrderRequest.setExceptionStatus(100);
             modifyOrderRequest.setExceptionRemark("厨房端主动取消");
-            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            /**
+             * 取消订单成功,则把订单通知order模块
+             */
+            Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            try {
+                future.get();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+            /**
+             * 将订单置为厨房端异常,可恢复,也可以直接申请退款
+             */
             orderResponse.setTotalStatus(6);
             orderResponse.setCancelCode(3);
             orderResponse.setExceptionStatus(100);
             orderResponse.setExceptionRemark("厨房端主动取消");
+            /**
+             * 将订单存入缓存并,通知给厨房
+             */
             notifyService.sendNotify(orderResponse);
             return cancelModel;
         }else{
+            /**
+             * 如果订单状态大于2,则判定取消失败
+             */
             if(totalStatus > 2){
                 return new ReturnModel(500,"该订单第三方配送公司不允许取消");
             }
+            /**
+             * 当订单状态为2时,判断订单的取消状态,如果不为0,则通知挂起
+             */
             if(orderResponse.getCancelCode() != 0){
                 return new ReturnModel(500,"该订单已经被挂起,请静心等待");
             }
@@ -193,11 +244,23 @@ public class CookHouseServiceImpl implements CookHouseService {
     @Override
     public ReturnModel abandonCancel(String orderId) {
         String key = OrderStatus.CANCEL+orderId;
+        /**
+         * 判断挂起订单的取消状态是否为1,否则直接判定为取消失败
+         */
         if("1".equalsIgnoreCase(redisService.getString(key))){
+            /**
+             * 监控该订单
+             */
             String value = redisService.watch(key);
             if("Ok".equalsIgnoreCase(value)){
+                /**
+                 * 拉起redis事物
+                 */
                 Transaction t = redisService.multi();
                 redisService.setString(key,"4");
+                /**
+                 * 判定redis事物是否执行成功
+                 */
                 if(null == t.exec()){
                     return new ReturnModel(500,"撤销失败");
                 }else{
@@ -260,11 +323,11 @@ public class CookHouseServiceImpl implements CookHouseService {
         }
         ModifyOrderRequest modifyOrderRequest = new ModifyOrderRequest();
         modifyOrderRequest.setOrderId(orderId);
-        modifyOrderRequest.setExceptionStatus(199);
+        modifyOrderRequest.setExceptionStatus(200);
         String remark = modifyOrderRequest.getExceptionRemark()+"厨房申请退款";
         modifyOrderRequest.setExceptionRemark(remark);
-        orderResponse.setTotalStatus(99);
-        orderResponse.setExceptionStatus(199);
+        orderResponse.setTotalStatus(7);
+        orderResponse.setExceptionStatus(200);
         orderResponse.setExceptionRemark(remark);
         notifyService.sendNotify(orderResponse);
         redisService.lpush(OrderStatus.REFUND+orderResponse.getStoreId(),MapperUtils.obj2jsonIgnoreNull(orderResponse),90000);

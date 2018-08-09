@@ -28,10 +28,10 @@ public class PushMessage {
         try {
             TextWebSocketFrame textWebSocketFrame = new TextWebSocketFrame(MapperUtils.obj2json(obj));
             ChannelFuture channelFuture = channel.writeAndFlush(textWebSocketFrame);
-            return channelFuture.isSuccess();
+            return channelFuture.isDone();
         } catch (JsonProcessingException e) {
             log.error(e.getMessage());
+            return false;
         }
-        return false;
     }
 }

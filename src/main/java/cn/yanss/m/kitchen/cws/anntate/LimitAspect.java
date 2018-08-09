@@ -18,7 +18,7 @@ public class LimitAspect {
     /**
      * 每秒只发出5个令牌，此处是单进程服务的限流,内部采用令牌捅算法实现
      */
-    private static  RateLimiter rateLimiter = RateLimiter.create(2.0);
+    private static  RateLimiter rateLimiter = RateLimiter.create(5.0);
 
     /**
      * Service层切点  限流
