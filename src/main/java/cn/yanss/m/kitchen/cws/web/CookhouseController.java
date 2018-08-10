@@ -1,5 +1,6 @@
 package cn.yanss.m.kitchen.cws.web;
 
+import cn.yanss.m.kitchen.cws.entity.cancel.OrderInfoRequest;
 import cn.yanss.m.kitchen.cws.entity.request.OrderRequest;
 import cn.yanss.m.kitchen.cws.entity.request.ProductRequest;
 import cn.yanss.m.kitchen.cws.entity.request.StoreRequest;
@@ -45,22 +46,22 @@ public class CookhouseController {
     /**
      * 操作订单(确认接单)/重新接单
      *
-     * @param orderId
+     * @param
      */
     @PostMapping("/opt")
-    public ReturnModel opt(@RequestBody String orderId){
-        return cookhouseService.opt(orderId);
+    public ReturnModel opt(@RequestBody OrderInfoRequest orderRequest){
+        return cookhouseService.opt(orderRequest.getOrderId());
     }
     /**
      * 操作订单异常接口  正式仪器
      *
-     * @param orderId
+     * @param
      * @return
      * @throws Exception
      */
     @PostMapping("/orderException")
-    public ReturnModel orderException(@RequestParam("orderId") String orderId) throws Exception {
-        return cookhouseService.orderException(orderId);
+    public ReturnModel orderException(@RequestBody OrderRequest orderRequest) throws Exception {
+        return cookhouseService.orderException(orderRequest.getOrderId());
     }
     /**
      * 放弃取消订单
@@ -94,7 +95,7 @@ public class CookhouseController {
      */
     @PostMapping("/findStoreId")
     public ReturnModel findStoreId(@RequestBody StoreRequest storeRequest){
-        return null;
+        return cookhouseService.findStoreId(storeRequest);
     }
     /**
      * 查询该店铺的所有美食

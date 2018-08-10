@@ -16,17 +16,17 @@ public interface DispatcherService {
 
     ReturnModel cancelOrder(OrderResponse orderResponse);
 
-    ReturnModel error(ModifyOrderRequest modifyOrderRequest);
+    void error(ModifyOrderRequest modifyOrderRequest);
 
-    ReturnModel anomaly(ModifyOrderRequest modifyOrderRequest);
+    void anomaly(ModifyOrderRequest modifyOrderRequest);
 
-    ReturnModel complete(ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException;
+    void complete(ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException;
 
-    ReturnModel delivery(ModifyOrderRequest modifyOrderRequest);
+    void delivery(ModifyOrderRequest modifyOrderRequest);
 
-    ReturnModel pickup(ModifyOrderRequest modifyOrderRequest) throws Exception;
+    void pickup(ModifyOrderRequest modifyOrderRequest) throws Exception;
 
-    ReturnModel taskOrder(ModifyOrderRequest modifyOrderRequest) throws Exception;
+    void taskOrder(ModifyOrderRequest modifyOrderRequest) throws Exception;
 
-    ReturnModel haveOrder(ModifyOrderRequest modifyOrderRequest);
+    void haveOrder(ModifyOrderRequest modifyOrderRequest);
 }

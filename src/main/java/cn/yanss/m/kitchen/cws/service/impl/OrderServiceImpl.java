@@ -96,6 +96,7 @@ public class OrderServiceImpl implements OrderService {
                         /**
                          * 设置订单配送状态
                          */
+                        orderResponse.setStatus(orderResponse.getTotalStatus());
                         orderResponse.setSendStatus(1);
                         notifyService.sendNotify(orderResponse);
 

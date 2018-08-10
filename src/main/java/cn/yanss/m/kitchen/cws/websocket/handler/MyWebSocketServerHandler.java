@@ -95,7 +95,11 @@ public class MyWebSocketServerHandler extends SimpleChannelInboundHandler<Object
         if (logger.isLoggable(Level.FINE)) {
             logger.fine(String.format("%s received %s", ctx.channel(), request));
         }
-        TextWebSocketFrame tws = new TextWebSocketFrame(new Date().toString() + ctx.channel().id() + "：" + request);
+        String[] strings = request.split(",");
+        TextWebSocketFrame tws = null;
+        if(strings[0].equalsIgnoreCase("ping")){
+            tws = new TextWebSocketFrame("pong");
+        }
 
           ctx.channel().writeAndFlush(tws);
     }
@@ -115,7 +119,7 @@ public class MyWebSocketServerHandler extends SimpleChannelInboundHandler<Object
         String uri=req.uri();
         QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
         Map<String, List<String>> parameters = queryStringDecoder.parameters();
-        Global.channel.put(parameters.get("orderId").get(0),ctx.channel());
+        Global.channel.put(parameters.get("storeId").get(0),ctx.channel());
         if(method==HttpMethod.GET&&uri.toLowerCase().startsWith("/webssss")){
             ctx.channel().attr(AttributeKey.valueOf("type")).set("anzhuo");
         }else if(method==HttpMethod.GET&&uri.toLowerCase().startsWith("/websocket")){

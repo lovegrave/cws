@@ -6,7 +6,7 @@ spring:
       config: classpath:cache/ehcache.xml
     type: ehcache
   redis:
-    host: 127.0.0.1
+    host: kitchen-redis
     port: 6379
     # password:
     jedis:
@@ -23,3 +23,6 @@ spring:
     username: odev
     password: ws2812bc
     driverClassName: com.mysql.jdbc.Driver
+feign:
+  hystrix:
+    enabled: true

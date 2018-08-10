@@ -33,8 +33,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/haveOrder")
-    public ReturnModel haveOrder(@RequestBody ModifyOrderRequest modifyOrderRequest) {
-        return dispatcherService.haveOrder(modifyOrderRequest);
+    public void haveOrder(@RequestBody ModifyOrderRequest modifyOrderRequest) {
+        dispatcherService.haveOrder(modifyOrderRequest);
     }
 
     /**
@@ -42,8 +42,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/taskOrder")
-    public ReturnModel taskOrder(@RequestBody ModifyOrderRequest modifyOrderRequest) throws Exception {
-        return dispatcherService.taskOrder(modifyOrderRequest);
+    public void taskOrder(@RequestBody ModifyOrderRequest modifyOrderRequest) throws Exception {
+        dispatcherService.taskOrder(modifyOrderRequest);
     }
 
     /**
@@ -51,8 +51,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/pickup")
-    public ReturnModel pickup(@RequestBody ModifyOrderRequest modifyOrderRequest) throws Exception {
-        return dispatcherService.pickup(modifyOrderRequest);
+    public void pickup(@RequestBody ModifyOrderRequest modifyOrderRequest) throws Exception {
+        dispatcherService.pickup(modifyOrderRequest);
     }
 
     /**
@@ -60,8 +60,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/delivery")
-    public ReturnModel delivery(@RequestBody ModifyOrderRequest modifyOrderRequest) {
-        return dispatcherService.delivery(modifyOrderRequest);
+    public void delivery(@RequestBody ModifyOrderRequest modifyOrderRequest) {
+      dispatcherService.delivery(modifyOrderRequest);
     }
 
     /**
@@ -69,8 +69,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/complete")
-    public ReturnModel complete(@RequestBody ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException {
-        return dispatcherService.complete(modifyOrderRequest);
+    public void complete(@RequestBody ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException {
+        dispatcherService.complete(modifyOrderRequest);
     }
 
     /**
@@ -78,8 +78,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/anomaly")
-    public ReturnModel anomaly(@RequestBody ModifyOrderRequest modifyOrderRequest) {
-        return dispatcherService.anomaly(modifyOrderRequest);
+    public void anomaly(@RequestBody ModifyOrderRequest modifyOrderRequest) {
+        dispatcherService.anomaly(modifyOrderRequest);
     }
 
     /**
@@ -87,8 +87,8 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/error")
-    public ReturnModel error(@RequestBody ModifyOrderRequest modifyOrderRequest) {
-        return dispatcherService.error(modifyOrderRequest);
+    public void error(@RequestBody ModifyOrderRequest modifyOrderRequest) {
+       dispatcherService.error(modifyOrderRequest);
     }
 
 

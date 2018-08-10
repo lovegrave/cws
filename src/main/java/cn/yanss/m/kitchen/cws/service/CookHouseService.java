@@ -1,6 +1,7 @@
 package cn.yanss.m.kitchen.cws.service;
 
 import cn.yanss.m.kitchen.cws.entity.request.OrderRequest;
+import cn.yanss.m.kitchen.cws.entity.request.StoreRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import common.returnModel.ReturnModel;
 
@@ -22,4 +23,6 @@ public interface CookHouseService {
     ReturnModel orderFinish(String orderId) throws JsonProcessingException, ExecutionException, InterruptedException;
 
     ReturnModel applicationForRefund(String orderId) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException;
+
+    ReturnModel findStoreId(StoreRequest storeRequest);
 }

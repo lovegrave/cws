@@ -113,11 +113,11 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel error(ModifyOrderRequest modifyOrderRequest) {
+    public void error(ModifyOrderRequest modifyOrderRequest) {
         String orderId = modifyOrderRequest.getOrderId();
         OrderResponse orderResponse =queryOrder(orderId);
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         /**
          * 删除该订单发配送的调度缓存
@@ -144,7 +144,6 @@ public class DispatcherServiceImpl implements DispatcherService {
          * 将变化后的订单状态存入redis sorted set(允许查询一次)
          */
         notifyService.sendNotify(orderResponse);
-        return null;
     }
 
     /**
@@ -154,11 +153,11 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel anomaly(ModifyOrderRequest modifyOrderRequest) {
+    public void anomaly(ModifyOrderRequest modifyOrderRequest) {
         String orderId = modifyOrderRequest.getOrderId();
         OrderResponse orderResponse =queryOrder(orderId);
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         Integer times = orderResponse.getTimes()+1;
         orderResponse.setTimes(times);
@@ -179,7 +178,7 @@ public class DispatcherServiceImpl implements DispatcherService {
             try {
                 future.get();
             } catch (Exception e) {
-                log.error( e.getMessage());
+                log.error("anomaly-->"+orderId,e.getMessage());
             }
         }else{
             /**
@@ -194,7 +193,6 @@ public class DispatcherServiceImpl implements DispatcherService {
          * 将新的订单状态存入缓存,并发给厨房
          */
         notifyService.sendNotify(orderResponse);
-        return null;
     }
 
     /**
@@ -204,10 +202,10 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel complete(ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException {
+    public void complete(ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException {
         OrderResponse orderResponse =queryOrder(modifyOrderRequest.getOrderId());
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         orderResponse.setTotalStatus(OrderStatus.DIS_COMPLETE);
         orderResponse.setOrderStatus(OrderStatus.DIS_COMPLETE);
@@ -221,9 +219,8 @@ public class DispatcherServiceImpl implements DispatcherService {
         try {
             future.get();
         } catch (Exception e) {
-            log.error( e.getMessage());
+            log.error("complete-->"+modifyOrderRequest.getOrderId(),e.getMessage());
         }
-        return null;
     }
 
     /**
@@ -232,10 +229,10 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel delivery(ModifyOrderRequest modifyOrderRequest) {
+    public void delivery(ModifyOrderRequest modifyOrderRequest) {
         OrderResponse orderResponse =queryOrder(modifyOrderRequest.getOrderId());
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         /**
          * 可能不会调用pickup接口,所以本接口也得修改订单状态以及totalStatus以及取货时间(打包时间)
@@ -251,9 +248,8 @@ public class DispatcherServiceImpl implements DispatcherService {
         try {
             future.get();
         } catch (Exception e) {
-            log.error( e.getMessage());
+            log.error("delivery-->"+modifyOrderRequest.getOrderId(),e.getMessage());
         }
-        return null;
     }
 
     /**
@@ -262,10 +258,10 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel pickup(ModifyOrderRequest modifyOrderRequest) throws Exception {
+    public void pickup(ModifyOrderRequest modifyOrderRequest) throws Exception {
         OrderResponse orderResponse =queryOrder(modifyOrderRequest.getOrderId());
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         orderResponse.setTotalStatus(OrderStatus.DISTRIBUTION);
         orderResponse.setOrderStatus(OrderStatus.DISTRIBUTION);
@@ -282,9 +278,8 @@ public class DispatcherServiceImpl implements DispatcherService {
         try {
             future.get();
         } catch (Exception e) {
-            log.error( e.getMessage());
+            log.error("pickup-->"+modifyOrderRequest.getOrderId(),e.getMessage());
         }
-        return null;
     }
 
     /**
@@ -293,10 +288,10 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel taskOrder(ModifyOrderRequest modifyOrderRequest) throws Exception {
+    public void taskOrder(ModifyOrderRequest modifyOrderRequest) throws Exception {
         OrderResponse orderResponse = queryOrder(modifyOrderRequest.getOrderId());
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         orderResponse.setSendStatus(OrderStatus.DIS_COMPLETE);
         orderResponse.setTaskUserName(modifyOrderRequest.getTaskUserName());
@@ -311,9 +306,8 @@ public class DispatcherServiceImpl implements DispatcherService {
         try {
             future.get();
         } catch (Exception e) {
-            log.error( e.getMessage());
+            log.error("taskOrder-->"+modifyOrderRequest.getOrderId(),e.getMessage());
         }
-        return null;
     }
 
     /**
@@ -322,10 +316,10 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public ReturnModel haveOrder(ModifyOrderRequest modifyOrderRequest) {
+    public void haveOrder(ModifyOrderRequest modifyOrderRequest) {
         OrderResponse orderResponse = queryOrder(modifyOrderRequest.getOrderId());
         if(null == orderResponse){
-            return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
+            return;
         }
         orderResponse.setSendName(modifyOrderRequest.getSendName());
         orderResponse.setSendStatus(OrderStatus.DISTRIBUTION);
@@ -337,9 +331,8 @@ public class DispatcherServiceImpl implements DispatcherService {
         try {
             future.get();
         } catch (Exception e) {
-            log.error( e.getMessage());
+            log.error("haveOrder-->"+modifyOrderRequest.getOrderId(),e.getMessage());
         }
-        return new ReturnModel();
     }
 
     /**
