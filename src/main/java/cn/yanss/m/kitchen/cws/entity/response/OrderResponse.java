@@ -13,12 +13,13 @@ import java.util.List;
  */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class OrderResponse implements Serializable {
+public class OrderResponse implements Serializable,Cloneable {
 
     private Integer oid;
     /**
      * 取货号
      */
+    private Integer status;
     private String orderPick;
     /**
      * 重试机制，次数
@@ -210,5 +211,7 @@ public class OrderResponse implements Serializable {
      * 订单备注
      */
     private String memberRemark;
+
+    private Integer appType;
 
 }

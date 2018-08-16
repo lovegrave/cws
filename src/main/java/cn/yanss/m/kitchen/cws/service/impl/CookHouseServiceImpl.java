@@ -123,6 +123,7 @@ public class CookHouseServiceImpl implements CookHouseService {
         if(null == orderResponse){
             ReturnModel returnModel = orderClient.detail(orderId);
             orderResponse = null != returnModel.getData()? MapperUtils.obj2pojo(returnModel.getData(),OrderResponse.class):null;
+
         }
         if(null == orderResponse){
             return new ReturnModel(500,OrderStatus.ORDER_NOT_EXISTS);
@@ -138,12 +139,7 @@ public class CookHouseServiceImpl implements CookHouseService {
             modifyOrderRequest.setOrderId(orderId);
             modifyOrderRequest.setOrderStatus(2);
             modifyOrderRequest.setSendStatus(2);
-            Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-            try {
-                future.get();
-            } catch (Exception e) {
-                log.error("opt-->"+orderId,e.getMessage());
-            }
+            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
             orderResponse.setTotalStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setOrderStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setSendStatus(OrderStatus.INDEVELOPMENT);
@@ -157,7 +153,9 @@ public class CookHouseServiceImpl implements CookHouseService {
             return new ReturnModel(500,"该操作无效");
         }
         notifyService.sendNotify(orderResponse);
-        redisService.lpush(OrderStatus.FLOW+OrderStatus.ACCOUNT_PAID,orderResponse.getOrderId(),7200);
+        if(orderResponse.getAppType() != 3){
+            redisService.lpush(OrderStatus.FLOW+OrderStatus.ACCOUNT_PAID,orderResponse.getOrderId(),7200);
+        }
         return new ReturnModel();
     }
 
@@ -189,6 +187,12 @@ public class CookHouseServiceImpl implements CookHouseService {
         if(totalStatus == 1){
             orderResponse.setCancelCode(3);
             orderResponse.setTotalStatus(6);
+            ModifyOrderRequest modifyOrderRequest = new ModifyOrderRequest();
+            modifyOrderRequest.setOrderId(orderId);
+            modifyOrderRequest.setExceptionStatus(100);
+            modifyOrderRequest.setExceptionRemark("厨房取消");
+            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            redisService.lrem(OrderStatus.FLOW+1,orderId);
             notifyService.sendNotify(orderResponse);
             return new ReturnModel();
         }
@@ -204,12 +208,7 @@ public class CookHouseServiceImpl implements CookHouseService {
             /**
              * 取消订单成功,则把订单通知order模块
              */
-            Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-            try {
-                future.get();
-            } catch (Exception e) {
-                log.error("orderException-->"+orderId,e.getMessage());
-            }
+            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
             /**
              * 将订单置为厨房端异常,可恢复,也可以直接申请退款
              */
@@ -358,5 +357,9 @@ public class CookHouseServiceImpl implements CookHouseService {
         } else {
             return null;
         }
+    }
+
+    private void pullMessage(){
+
     }
 }

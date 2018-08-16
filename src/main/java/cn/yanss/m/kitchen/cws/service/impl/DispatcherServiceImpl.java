@@ -23,7 +23,6 @@ import redis.clients.jedis.Transaction;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Future;
 
 @Service
 @Log4j2
@@ -174,12 +173,7 @@ public class DispatcherServiceImpl implements DispatcherService {
             /**
              * 同步数据库
              */
-            Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-            try {
-                future.get();
-            } catch (Exception e) {
-                log.error("anomaly-->"+orderId,e.getMessage());
-            }
+            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
         }else{
             /**
              * 重新发起配送
@@ -215,12 +209,7 @@ public class DispatcherServiceImpl implements DispatcherService {
         orderResponse.setTaskUserPhone(modifyOrderRequest.getTaskUserPhone());
         redisService.lpush(OrderStatus.COMPLETE+orderResponse.getStoreId(), MapperUtils.obj2jsonIgnoreNull(orderResponse),90000);
         notifyService.sendNotify(orderResponse);
-        Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-        try {
-            future.get();
-        } catch (Exception e) {
-            log.error("complete-->"+modifyOrderRequest.getOrderId(),e.getMessage());
-        }
+        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**
@@ -229,7 +218,7 @@ public class DispatcherServiceImpl implements DispatcherService {
      * @return
      */
     @Override
-    public void delivery(ModifyOrderRequest modifyOrderRequest) {
+    public void delivery(ModifyOrderRequest modifyOrderRequest) throws Exception {
         OrderResponse orderResponse =queryOrder(modifyOrderRequest.getOrderId());
         if(null == orderResponse){
             return;
@@ -243,13 +232,13 @@ public class DispatcherServiceImpl implements DispatcherService {
         orderResponse.setTaskUserName(modifyOrderRequest.getTaskUserName());
         orderResponse.setTaskUserPhone(modifyOrderRequest.getTaskUserPhone());
         orderResponse.setPackUserTime(new Date());
-        notifyService.sendNotify(orderResponse);
-        Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-        try {
-            future.get();
-        } catch (Exception e) {
-            log.error("delivery-->"+modifyOrderRequest.getOrderId(),e.getMessage());
+        String key = OrderStatus.CANCEL+modifyOrderRequest.getOrderId();
+        if(redisService.exists(key)){
+            tryCancanOrder(key,orderResponse);
         }
+        notifyService.sendNotify(orderResponse);
+        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+
     }
 
     /**
@@ -274,12 +263,7 @@ public class DispatcherServiceImpl implements DispatcherService {
             tryCancanOrder(key,orderResponse);
         }
         notifyService.sendNotify(orderResponse);
-        Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-        try {
-            future.get();
-        } catch (Exception e) {
-            log.error("pickup-->"+modifyOrderRequest.getOrderId(),e.getMessage());
-        }
+        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**
@@ -302,12 +286,7 @@ public class DispatcherServiceImpl implements DispatcherService {
             tryCancanOrder(key,orderResponse);
         }
         notifyService.sendNotify(orderResponse);
-        Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-        try {
-            future.get();
-        } catch (Exception e) {
-            log.error("taskOrder-->"+modifyOrderRequest.getOrderId(),e.getMessage());
-        }
+        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**
@@ -327,12 +306,7 @@ public class DispatcherServiceImpl implements DispatcherService {
         orderResponse.setMtPeisongId(null != modifyOrderRequest.getMtPeisongId()?modifyOrderRequest.getMtPeisongId():null);
         redisService.lrem(OrderStatus.FLOW+OrderStatus.ACCOUNT_PAID,modifyOrderRequest.getOrderId());
         notifyService.sendNotify(orderResponse);
-        Future future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
-        try {
-            future.get();
-        } catch (Exception e) {
-            log.error("haveOrder-->"+modifyOrderRequest.getOrderId(),e.getMessage());
-        }
+        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**

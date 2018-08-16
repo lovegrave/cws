@@ -60,7 +60,7 @@ public class DispatcherController {
      * @return
      */
     @PostMapping("/delivery")
-    public void delivery(@RequestBody ModifyOrderRequest modifyOrderRequest) {
+    public void delivery(@RequestBody ModifyOrderRequest modifyOrderRequest) throws Exception {
       dispatcherService.delivery(modifyOrderRequest);
     }
 

@@ -22,7 +22,7 @@ public interface DispatcherService {
 
     void complete(ModifyOrderRequest modifyOrderRequest) throws JsonProcessingException;
 
-    void delivery(ModifyOrderRequest modifyOrderRequest);
+    void delivery(ModifyOrderRequest modifyOrderRequest) throws Exception;
 
     void pickup(ModifyOrderRequest modifyOrderRequest) throws Exception;
 

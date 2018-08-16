@@ -54,6 +54,10 @@ public class OrderStatus {
      */
     public static final String STOREKEY = "store";
     /**
+     * 店铺键
+     */
+    public static final String STORERESPONSE = "storeResponse";
+    /**
      * 订单发配送存储键头
      */
     public static final String FLOW = "flow";

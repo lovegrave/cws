@@ -40,8 +40,6 @@ public class NotifyCacheEventHandler implements EventHandler<NotifyMessage>,Work
          */
         orderResponse.setBeforeStatus(orderResponse.getTotalStatus());
         ehCacheService.save(orderResponse.getOrderId(),orderResponse);
-        log.info(String.valueOf(orderResponse.getStoreId())+orderResponse.getTotalStatus());
-        log.info(orderResponse.getOrderPick());
         redisService.zadd(String.valueOf(orderResponse.getStoreId())+orderResponse.getTotalStatus(),Double.valueOf(orderResponse.getOrderPick()),orderResponse.getOrderId(),7200);
     }
 }

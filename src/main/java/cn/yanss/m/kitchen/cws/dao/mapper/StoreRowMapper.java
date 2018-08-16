@@ -6,6 +6,10 @@ import org.springframework.lang.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class StoreRowMapper implements RowMapper<StoreResponse> {
     @Nullable
@@ -17,7 +21,7 @@ public class StoreRowMapper implements RowMapper<StoreResponse> {
         store.setBookDay(rs.getInt("book_day"));
         store.setCity(rs.getString("city"));
         store.setCountry(rs.getString("country"));
-        store.setCreateTime(rs.getDate("create_time"));
+        store.setCreateTime(rs.getTimestamp("create_time"));
         store.setDadaStoreId(rs.getString("dada_store_id"));
         store.setEndTime(rs.getTime("end_time"));
         store.setLat(rs.getDouble("lat"));
