@@ -1,7 +1,7 @@
 package cn.yanss.m.kitchen.cws.anntate;
 
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import com.google.common.util.concurrent.RateLimiter;
-import common.returnModel.ReturnModel;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

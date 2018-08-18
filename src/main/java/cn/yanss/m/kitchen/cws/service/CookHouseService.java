@@ -1,9 +1,9 @@
 package cn.yanss.m.kitchen.cws.service;
 
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.entity.request.OrderRequest;
 import cn.yanss.m.kitchen.cws.entity.request.StoreRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import common.returnModel.ReturnModel;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;

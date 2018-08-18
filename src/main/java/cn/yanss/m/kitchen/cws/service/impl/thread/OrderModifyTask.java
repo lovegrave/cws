@@ -2,8 +2,8 @@ package cn.yanss.m.kitchen.cws.service.impl.thread;
 
 
 import cn.yanss.m.kitchen.cws.api.OrderClient;
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.entity.request.ModifyOrderRequest;
-import common.returnModel.ReturnModel;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.concurrent.Callable;

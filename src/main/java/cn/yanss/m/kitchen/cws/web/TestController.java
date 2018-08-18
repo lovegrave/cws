@@ -1,8 +1,8 @@
 package cn.yanss.m.kitchen.cws.web;
 
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.disruptor.NotifyServiceImpl;
 import cn.yanss.m.kitchen.cws.entity.response.OrderResponse;
-import common.returnModel.ReturnModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

@@ -26,5 +26,9 @@ public class OrderRequest {
      */
     private String token;
 
+    private Integer currentPage;
+
+    private Integer pageSize;
+
 
 }

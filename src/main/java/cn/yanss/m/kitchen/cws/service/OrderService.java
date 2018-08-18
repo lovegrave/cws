@@ -1,7 +1,7 @@
 package cn.yanss.m.kitchen.cws.service;
 
-import com.alibaba.fastjson.JSONArray;
-import common.returnModel.ReturnModel;
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
+import com.alibaba.fastjson.JSONArray;;
 
 import java.io.IOException;
 

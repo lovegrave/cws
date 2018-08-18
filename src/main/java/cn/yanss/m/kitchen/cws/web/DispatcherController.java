@@ -1,9 +1,9 @@
 package cn.yanss.m.kitchen.cws.web;
 
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.entity.request.ModifyOrderRequest;
 import cn.yanss.m.kitchen.cws.service.DispatcherService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import common.returnModel.ReturnModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
