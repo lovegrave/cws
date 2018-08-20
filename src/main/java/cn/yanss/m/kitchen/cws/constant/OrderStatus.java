@@ -32,6 +32,10 @@ public class OrderStatus {
      */
     public static final int REFUND_ORDERS = 7;
     /**
+     * 配送完成
+     */
+    public static final int SEND_COMPLETE= 8;
+    /**
      * 订单异常
      */
     public static final int ERROR_STATUS = 199;
@@ -48,7 +52,7 @@ public class OrderStatus {
     /**
      * 订单redis存储键头
      */
-    public static final String ORDERSTATUS = "status";
+    public static final String ORDERSTATUS = "orderStatus";
     /**
      * 店铺redis存储键头,推送存储键头
      */
@@ -77,6 +81,10 @@ public class OrderStatus {
      * 订单申请退款,订单取消存储键头
      */
     public static final String REFUND = "refund";
+
+    public static final String SEND_STATUS = "send";
+
+    public static final String EXCEPTION_STATUS = "exception";
 
     public static final String THREAD_ERREO = "线程池中发现异常，被中断";
 }

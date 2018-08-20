@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class StoreRequest {
 
-    private Integer storeId;
-    private String phone;
+    private  Integer storeId;
+    private Integer status;
+    private String pid;
 }

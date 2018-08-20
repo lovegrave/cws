@@ -10,31 +10,36 @@ import cn.yanss.m.kitchen.cws.entity.response.OrderResponse;
 import cn.yanss.m.kitchen.cws.service.OrderService;
 import cn.yanss.m.kitchen.cws.utils.DateUtil;
 import cn.yanss.m.kitchen.cws.utils.MapperUtils;
+import cn.yanss.m.kitchen.cws.websocket.message.PushMessage;
 import com.alibaba.fastjson.JSONArray;
 import common.returnModel.ReturnModel;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 
 @Service
+@Log4j2
 public class OrderServiceImpl implements OrderService {
 
     private final OrderClient orderClient;
     private final RedisService redisService;
     private final EhCacheServiceImpl ehCacheService;
     private final NotifyServiceImpl notifyService;
-
+    private final PushMessage pushMessage;
     @Autowired
-    public OrderServiceImpl(OrderClient orderClient, RedisService redisService, EhCacheServiceImpl ehCacheService, NotifyServiceImpl notifyService) {
+    public OrderServiceImpl(OrderClient orderClient, RedisService redisService, EhCacheServiceImpl ehCacheService, NotifyServiceImpl notifyService,PushMessage pushMessage) {
         this.orderClient = orderClient;
         this.redisService = redisService;
         this.ehCacheService = ehCacheService;
         this.notifyService = notifyService;
+        this.pushMessage = pushMessage;
     }
 
     /**
@@ -107,5 +112,54 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             return new ReturnModel(500, "数据存储错误");
         }
+    }
+
+    /**
+     * 催单接口
+     * @param orderId
+     * @return
+     */
+    @Override
+    public ReturnModel reminder(String orderId) {
+        OrderResponse orderResponse = (OrderResponse) ehCacheService.getObj(orderId);
+        if(null == orderResponse){
+            return new ReturnModel(500,"缓存错误,请先发单");
+        }
+        pushMessage.sendMessage(String.valueOf(orderResponse.getStoreId()), Collections.singletonList(orderResponse));
+        return new ReturnModel();
+    }
+
+    /**
+     * 申请退款
+     * @param orderId
+     * @return
+     */
+    @Override
+    public ReturnModel refund(String orderId) {
+        OrderResponse orderResponse = (OrderResponse) ehCacheService.getObj(orderId);
+        if(null == orderResponse){
+            ReturnModel returnModel = orderClient.detail(orderId);
+            orderResponse = null != returnModel.getData()? MapperUtils.obj2pojo(returnModel.getData(),OrderResponse.class):null;
+        }
+        if(null == orderResponse){
+            log.error("refund","订单错误");
+            return new ReturnModel(500,"订单号错误");
+        }
+        orderResponse.setRefundStatus(1);
+        redisService.zadd(OrderStatus.REFUND+orderResponse.getStoreId()+1,Double.valueOf(orderResponse.getOrderPrice()),orderId,7200);
+        notifyService.sendNotify(orderResponse);
+        return new ReturnModel();
+    }
+
+    /**
+     * 取消申请退款
+     * @param orderId
+     * @return
+     */
+    @Override
+    public ReturnModel cancelRefund(String orderId) {
+
+
+        return null;
     }
 }

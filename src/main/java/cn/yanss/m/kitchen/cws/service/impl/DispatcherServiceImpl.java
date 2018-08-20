@@ -23,6 +23,7 @@ import redis.clients.jedis.Transaction;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 @Service
 @Log4j2
@@ -33,14 +34,16 @@ public class DispatcherServiceImpl implements DispatcherService {
     private final RedisService redisService;
     private final EhCacheServiceImpl ehCacheService;
     private final NotifyServiceImpl notifyService;
+    private final ExecutorService executorService;
 
     @Autowired
-    public DispatcherServiceImpl(OrderClient orderClient, DispatcherClient dispatcherClient, RedisService redisService, EhCacheServiceImpl ehCacheService, NotifyServiceImpl notifyService) {
+    public DispatcherServiceImpl(OrderClient orderClient, DispatcherClient dispatcherClient, RedisService redisService, EhCacheServiceImpl ehCacheService, NotifyServiceImpl notifyService,ExecutorService executorService) {
         this.orderClient = orderClient;
         this.dispatcherClient = dispatcherClient;
         this.redisService = redisService;
         this.ehCacheService = ehCacheService;
         this.notifyService = notifyService;
+        this.executorService = executorService;
     }
     @Override
     public ReturnModel gainOrder() {
@@ -123,20 +126,9 @@ public class DispatcherServiceImpl implements DispatcherService {
          */
         redisService.lrem(OrderStatus.FLOW + OrderStatus.ACCOUNT_PAID,orderId);
         /**
-         * 设置订单新的查询状态
-         * 订单状态：
-         * 1、订单的状态(用户查看,厨房操作查看,订单模块操作,回调操作)
-         * 2、配送状态(厨房操作查看,回调操作)
-         * 3、异常状态(厨房操作查看以及后台查看,回调操作)
-         * 4、退款状态(厨房以及后台操作查阅)
-         * 5、取消订单状态(厨房操作查看,回调操作)
-         * 6、订单查询状态(厨房查询某种订单状态参数,根据上述参数变化而变化)
-         */
-        orderResponse.setTotalStatus(OrderStatus.DELIVERY_ERROR);
-        /**
          * 将要修改的的值赋值给orderResponse
          */
-        orderResponse.setExceptionStatus(modifyOrderRequest.getExceptionStatus());
+        orderResponse.setExceptionStatus(/*modifyOrderRequest.getExceptionStatus()*/OrderStatus.DISTRIBUTION);
         orderResponse.setExceptionRemark(modifyOrderRequest.getExceptionRemark());
         orderResponse.setSendExceptionTime(new Date());
         /**
@@ -160,7 +152,7 @@ public class DispatcherServiceImpl implements DispatcherService {
         }
         Integer times = orderResponse.getTimes()+1;
         orderResponse.setTimes(times);
-        orderResponse.setExceptionStatus(modifyOrderRequest.getExceptionStatus());
+        orderResponse.setExceptionStatus(/*modifyOrderRequest.getExceptionStatus()*/OrderStatus.DELIVERY_ERROR);
         /**
          * 如果连续配送五次失败,请厨房端处理
          */
@@ -169,11 +161,10 @@ public class DispatcherServiceImpl implements DispatcherService {
              * 将该订单从发起配送状态中删除
              */
             redisService.lrem(OrderStatus.FLOW+OrderStatus.ACCOUNT_PAID,orderId);
-            orderResponse.setTotalStatus(OrderStatus.KITCHEN_ERROR);
             /**
              * 同步数据库
              */
-            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
         }else{
             /**
              * 重新发起配送
@@ -201,15 +192,15 @@ public class DispatcherServiceImpl implements DispatcherService {
         if(null == orderResponse){
             return;
         }
-        orderResponse.setTotalStatus(OrderStatus.DIS_COMPLETE);
+        orderResponse.setTotalStatus(OrderStatus.SEND_COMPLETE);
         orderResponse.setOrderStatus(OrderStatus.DIS_COMPLETE);
-        orderResponse.setSendStatus(OrderStatus.REFUND_ORDERS);
+        orderResponse.setSendStatus(OrderStatus.SEND_COMPLETE);
         orderResponse.setTaskTime(modifyOrderRequest.getTaskTime());
         orderResponse.setTaskUserName(modifyOrderRequest.getTaskUserName());
         orderResponse.setTaskUserPhone(modifyOrderRequest.getTaskUserPhone());
         redisService.lpush(OrderStatus.COMPLETE+orderResponse.getStoreId(), MapperUtils.obj2jsonIgnoreNull(orderResponse),90000);
         notifyService.sendNotify(orderResponse);
-        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**
@@ -226,9 +217,9 @@ public class DispatcherServiceImpl implements DispatcherService {
         /**
          * 可能不会调用pickup接口,所以本接口也得修改订单状态以及totalStatus以及取货时间(打包时间)
          */
-        orderResponse.setTotalStatus(OrderStatus.DISTRIBUTION);
+        orderResponse.setTotalStatus(OrderStatus.REFUND_ORDERS);
         orderResponse.setOrderStatus(OrderStatus.DISTRIBUTION);
-        orderResponse.setSendStatus(OrderStatus.KITCHEN_ERROR);
+        orderResponse.setSendStatus(OrderStatus.REFUND_ORDERS);
         orderResponse.setTaskUserName(modifyOrderRequest.getTaskUserName());
         orderResponse.setTaskUserPhone(modifyOrderRequest.getTaskUserPhone());
         orderResponse.setPackUserTime(new Date());
@@ -237,7 +228,7 @@ public class DispatcherServiceImpl implements DispatcherService {
             tryCancanOrder(key,orderResponse);
         }
         notifyService.sendNotify(orderResponse);
-        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
 
     }
 
@@ -252,9 +243,9 @@ public class DispatcherServiceImpl implements DispatcherService {
         if(null == orderResponse){
             return;
         }
-        orderResponse.setTotalStatus(OrderStatus.DISTRIBUTION);
+        orderResponse.setTotalStatus(OrderStatus.KITCHEN_ERROR);
         orderResponse.setOrderStatus(OrderStatus.DISTRIBUTION);
-        orderResponse.setSendStatus(OrderStatus.DELIVERY_ERROR);
+        orderResponse.setSendStatus(OrderStatus.KITCHEN_ERROR);
         orderResponse.setTaskUserName(modifyOrderRequest.getTaskUserName());
         orderResponse.setTaskUserPhone(modifyOrderRequest.getTaskUserPhone());
         orderResponse.setPackUserTime(new Date());
@@ -263,7 +254,7 @@ public class DispatcherServiceImpl implements DispatcherService {
             tryCancanOrder(key,orderResponse);
         }
         notifyService.sendNotify(orderResponse);
-        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**
@@ -277,7 +268,8 @@ public class DispatcherServiceImpl implements DispatcherService {
         if(null == orderResponse){
             return;
         }
-        orderResponse.setSendStatus(OrderStatus.DIS_COMPLETE);
+        orderResponse.setSendStatus(OrderStatus.DELIVERY_ERROR);
+        orderResponse.setTotalStatus(OrderStatus.DELIVERY_ERROR);
         orderResponse.setTaskUserName(modifyOrderRequest.getTaskUserName());
         orderResponse.setTaskUserPhone(modifyOrderRequest.getTaskUserPhone());
         orderResponse.setTaskUserTime(new Date());
@@ -286,8 +278,29 @@ public class DispatcherServiceImpl implements DispatcherService {
             tryCancanOrder(key,orderResponse);
         }
         notifyService.sendNotify(orderResponse);
-        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
+
+    /**
+     * 待调度，待分配骑手
+     * @param modifyOrderRequest
+     */
+    @Override
+    public void dispatcherRider(ModifyOrderRequest modifyOrderRequest) {
+        OrderResponse orderResponse = queryOrder(modifyOrderRequest.getOrderId());
+        if(null == orderResponse){
+            return;
+        }
+        orderResponse.setSendName(modifyOrderRequest.getSendName());
+        orderResponse.setSendStatus(OrderStatus.DIS_COMPLETE);
+        orderResponse.setTotalStatus(OrderStatus.DIS_COMPLETE);
+        orderResponse.setDeliveryId(null != modifyOrderRequest.getDeliveryId()?modifyOrderRequest.getDeliveryId():null);
+        orderResponse.setMtPeisongId(null != modifyOrderRequest.getMtPeisongId()?modifyOrderRequest.getMtPeisongId():null);
+        redisService.lrem(OrderStatus.FLOW+OrderStatus.ACCOUNT_PAID,modifyOrderRequest.getOrderId());
+        notifyService.sendNotify(orderResponse);
+        executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+    }
+
 
     /**
      * 订单发起配送成功,该回调由第三方公司接受订单后发起的回调
@@ -302,11 +315,10 @@ public class DispatcherServiceImpl implements DispatcherService {
         }
         orderResponse.setSendName(modifyOrderRequest.getSendName());
         orderResponse.setSendStatus(OrderStatus.DISTRIBUTION);
-        orderResponse.setDeliveryId(null != modifyOrderRequest.getDeliveryId()?modifyOrderRequest.getDeliveryId():null);
-        orderResponse.setMtPeisongId(null != modifyOrderRequest.getMtPeisongId()?modifyOrderRequest.getMtPeisongId():null);
+        orderResponse.setTotalStatus(OrderStatus.DISTRIBUTION);
         redisService.lrem(OrderStatus.FLOW+OrderStatus.ACCOUNT_PAID,modifyOrderRequest.getOrderId());
         notifyService.sendNotify(orderResponse);
-        ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
     }
 
     /**

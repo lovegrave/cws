@@ -1,5 +1,6 @@
 package cn.yanss.m.kitchen.cws.service.impl;
 
+import afu.org.checkerframework.checker.oigj.qual.O;
 import cn.yanss.m.kitchen.cws.api.OrderClient;
 import cn.yanss.m.kitchen.cws.api.ProductClient;
 import cn.yanss.m.kitchen.cws.cache.EhCacheServiceImpl;
@@ -26,6 +27,7 @@ import redis.clients.jedis.Transaction;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -40,15 +42,17 @@ public class CookHouseServiceImpl implements CookHouseService {
     private final ProductClient productClient;
     private final NotifyServiceImpl notifyService;
     private final DispatcherService dispatcherService;
+    private final ExecutorService executorService;
 
     @Autowired
-    public CookHouseServiceImpl(RedisService redisService, EhCacheServiceImpl ehCacheService, OrderClient orderClient, NotifyServiceImpl notifyService, DispatcherService dispatcherService,ProductClient productClient) {
+    public CookHouseServiceImpl(RedisService redisService, EhCacheServiceImpl ehCacheService, OrderClient orderClient, NotifyServiceImpl notifyService, DispatcherService dispatcherService,ProductClient productClient,ExecutorService executorService) {
         this.redisService = redisService;
         this.ehCacheService = ehCacheService;
         this.orderClient = orderClient;
         this.notifyService = notifyService;
         this.dispatcherService = dispatcherService;
         this.productClient = productClient;
+        this.executorService = executorService;
     }
 
     /**
@@ -139,7 +143,7 @@ public class CookHouseServiceImpl implements CookHouseService {
             modifyOrderRequest.setOrderId(orderId);
             modifyOrderRequest.setOrderStatus(2);
             modifyOrderRequest.setSendStatus(2);
-            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
             orderResponse.setTotalStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setOrderStatus(OrderStatus.INDEVELOPMENT);
             orderResponse.setSendStatus(OrderStatus.INDEVELOPMENT);
@@ -191,7 +195,7 @@ public class CookHouseServiceImpl implements CookHouseService {
             modifyOrderRequest.setOrderId(orderId);
             modifyOrderRequest.setExceptionStatus(100);
             modifyOrderRequest.setExceptionRemark("厨房取消");
-            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
             redisService.lrem(OrderStatus.FLOW+1,orderId);
             notifyService.sendNotify(orderResponse);
             return new ReturnModel();
@@ -208,7 +212,7 @@ public class CookHouseServiceImpl implements CookHouseService {
             /**
              * 取消订单成功,则把订单通知order模块
              */
-            ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+            executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
             /**
              * 将订单置为厨房端异常,可恢复,也可以直接申请退款
              */
@@ -312,13 +316,18 @@ public class CookHouseServiceImpl implements CookHouseService {
         redisService.setObject(orderId,orderResponse,90000);
         redisService.lpush(OrderStatus.COMPLETE+orderResponse.getStoreId(),MapperUtils.obj2jsonIgnoreNull(orderResponse),90000);
         notifyService.sendNotify(orderResponse);
-        Future<ReturnModel> future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        Future<ReturnModel> future = executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
         try {
             return future.get();
         } catch (Exception e) {
             log.error("orderFinish-->"+orderId,e.getMessage());
             return new ReturnModel(500,"修改失败");
         }
+    }
+
+    @Override
+    public ReturnModel cancelOrderAndRefund(String orderId) {
+        return null;
     }
 
     @Override
@@ -333,15 +342,15 @@ public class CookHouseServiceImpl implements CookHouseService {
         }
         ModifyOrderRequest modifyOrderRequest = new ModifyOrderRequest();
         modifyOrderRequest.setOrderId(orderId);
-        modifyOrderRequest.setExceptionStatus(200);
+        modifyOrderRequest.setExceptionStatus(1);
         String remark = modifyOrderRequest.getExceptionRemark()+"厨房申请退款";
         modifyOrderRequest.setExceptionRemark(remark);
-        orderResponse.setTotalStatus(7);
-        orderResponse.setExceptionStatus(200);
+        orderResponse.setTotalStatus(99);
+        orderResponse.setExceptionStatus(1);
         orderResponse.setExceptionRemark(remark);
         notifyService.sendNotify(orderResponse);
         redisService.lpush(OrderStatus.REFUND+orderResponse.getStoreId(),MapperUtils.obj2jsonIgnoreNull(orderResponse),90000);
-        Future<ReturnModel> future = ThreadPool.pool.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
+        Future<ReturnModel> future = executorService.submit(new OrderModifyTask(modifyOrderRequest,orderClient));
         try {
             return future.get();
         } catch (Exception e) {

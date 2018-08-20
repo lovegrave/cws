@@ -22,6 +22,8 @@ public interface CookHouseService {
 
     ReturnModel orderFinish(String orderId) throws JsonProcessingException, ExecutionException, InterruptedException;
 
+    ReturnModel cancelOrderAndRefund(String orderId);
+
     ReturnModel applicationForRefund(String orderId) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException;
 
     ReturnModel findStoreId(StoreRequest storeRequest);

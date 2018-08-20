@@ -25,6 +25,16 @@ public class OrderRequest {
      * 请求token
      */
     private String token;
-
-
+    /**
+     * 起始页
+     */
+    private Integer currentPage = 1;
+    /**
+     * 每页的条数
+     */
+    private Integer pageSize = 20;
+    /**
+     * 查询的方式,默认为
+     */
+    private Integer style;
 }

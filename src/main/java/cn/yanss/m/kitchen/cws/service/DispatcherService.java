@@ -28,5 +28,7 @@ public interface DispatcherService {
 
     void taskOrder(ModifyOrderRequest modifyOrderRequest) throws Exception;
 
+    void dispatcherRider(ModifyOrderRequest modifyOrderRequest);
+
     void haveOrder(ModifyOrderRequest modifyOrderRequest);
 }

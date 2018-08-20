@@ -9,4 +9,9 @@ public interface OrderService {
 
     ReturnModel addOrder(JSONArray orderResponseList) throws IOException;
 
+    ReturnModel reminder(String orderId);
+
+    ReturnModel refund(String orderId);
+
+    ReturnModel cancelRefund(String orderId);
 }

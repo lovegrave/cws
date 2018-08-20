@@ -4,10 +4,7 @@ import cn.yanss.m.kitchen.cws.service.OrderService;
 import com.alibaba.fastjson.JSONArray;
 import common.returnModel.ReturnModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -26,5 +23,30 @@ public class OrderController {
     @PostMapping("/addOrder")
     public ReturnModel addOrder(@RequestBody JSONArray orderResponseList) throws Exception {
         return orderService.addOrder(orderResponseList);
+    }
+
+    /**
+     * 催单
+     * @param orderId
+     * @return
+     */
+    @GetMapping("/reminder")
+    public ReturnModel reminder(String orderId){
+        return orderService.reminder(orderId);
+    }
+
+    /**
+     * 申请退款
+     * @param orderId
+     * @return
+     */
+    @GetMapping("/refund")
+    public ReturnModel refund(String orderId){
+        return orderService.refund(orderId);
+    }
+
+    @GetMapping("/cancelRefund")
+    public ReturnModel cancelRefund(String orderId){
+        return orderService.cancelRefund(orderId);
     }
 }
