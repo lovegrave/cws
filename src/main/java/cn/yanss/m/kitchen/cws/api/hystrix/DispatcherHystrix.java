@@ -1,8 +1,8 @@
 package cn.yanss.m.kitchen.cws.api.hystrix;
 
 import cn.yanss.m.kitchen.cws.api.DispatcherClient;
-import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.entity.response.OrderResponse;
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 

@@ -115,11 +115,14 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.5</version>
         </dependency>
+<<<<<<< Updated upstream
         <!--<dependency>
             <groupId>org.aodous.mall</groupId>
             <artifactId>common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>-->
+=======
+>>>>>>> Stashed changes
     </dependencies>
 
     <dependencyManagement>

@@ -2,8 +2,8 @@ package cn.yanss.m.kitchen.cws.api;
 
 import cn.yanss.m.kitchen.cws.api.config.FeignConfig;
 import cn.yanss.m.kitchen.cws.api.hystrix.DispatcherHystrix;
-import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.entity.response.OrderResponse;
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
