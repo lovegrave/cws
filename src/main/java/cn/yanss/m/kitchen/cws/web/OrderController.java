@@ -1,8 +1,8 @@
 package cn.yanss.m.kitchen.cws.web;
 
+import cn.yanss.m.kitchen.cws.common.ReturnModel;
 import cn.yanss.m.kitchen.cws.service.OrderService;
 import com.alibaba.fastjson.JSONArray;
-import common.returnModel.ReturnModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

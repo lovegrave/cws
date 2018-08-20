@@ -25,6 +25,7 @@ public class OrderRequest {
      * 请求token
      */
     private String token;
+
     /**
      * 起始页
      */
@@ -37,4 +38,6 @@ public class OrderRequest {
      * 查询的方式,默认为
      */
     private Integer style;
+
+
 }

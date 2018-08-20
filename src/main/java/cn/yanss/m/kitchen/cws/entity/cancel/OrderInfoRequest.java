@@ -1,7 +1,6 @@
 package cn.yanss.m.kitchen.cws.entity.cancel;
 
 import lombok.Data;
-
 import java.util.Date;
 
 @Data
