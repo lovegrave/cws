@@ -5,8 +5,6 @@ import cn.yanss.m.kitchen.cws.constant.OrderStatus;
 import cn.yanss.m.kitchen.cws.disruptor.pojo.NotifyMessage;
 import cn.yanss.m.kitchen.cws.entity.response.OrderResponse;
 import cn.yanss.m.kitchen.cws.websocket.message.PushMessage;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.WorkHandler;
 import lombok.extern.log4j.Log4j2;
